@@ -184,6 +184,7 @@ int main() {
 
 	Texture2D container_tex("assets/container2.png");
 	Texture2D container_spec_tex("assets/container2_specular.png");
+	Texture2D matrix_tex("assets/matrix.jpg");
 
 	while (not glfwWindowShouldClose(window)) {
 		glfwSwapBuffers(window);
@@ -219,7 +220,7 @@ int main() {
 		lamp_shader.set_matrix4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
-		if (flashlight) {
+		if (flashlight) { // FIXME: make the flashlight work later
 			model = glm::mat4(1.0f);
 			model = glm::translate(model, camera.position);
 			model = glm::scale(model, glm::vec3(0.001f));
@@ -246,8 +247,12 @@ int main() {
 		glActiveTexture(GL_TEXTURE1);
 		container_spec_tex.bind();
 
+		glActiveTexture(GL_TEXTURE2);
+		matrix_tex.bind();
+
 		main_shader.set_int("m1.diffuse", 0);
 		main_shader.set_int("m1.specular", 1);
+		main_shader.set_int("m1.emission", 2);
 		main_shader.set_float("m1.shininess", 32.0f);
 
 		main_shader.set_float3("lamp.ambient", glm::vec3(0.2f));
