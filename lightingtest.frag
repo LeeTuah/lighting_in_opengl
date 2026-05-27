@@ -1,9 +1,8 @@
 # version 330 core
 
 struct Material {
-	vec3 ambient;
-	vec3 diffuse;
-	vec3 specular;
+	sampler2D diffuse;
+	sampler2D specular;
 	
 	float shininess;
 };
@@ -19,6 +18,7 @@ struct Light {
 in vec3 normal;
 in vec3 frag_pos;
 in vec3 lamp_pos;
+in vec2 tex_coords;
 
 out vec4 FragColor;
 
@@ -31,16 +31,16 @@ uniform Light lamp;
 void main() {
 	vec3 viewer_pos = vec3(0, 0, 0);
 	
-	vec3 ambient_light = lamp_color * lamp.ambient * m1.ambient;
+	vec3 ambient_light = lamp.ambient * texture(m1.diffuse, tex_coords).rgb;
 
 	vec3 lamp_dirn = normalize(lamp_pos - frag_pos);
 	float diff_dot_value = max(dot(normal, lamp_dirn), 0);
-	vec3 diffuse_light = lamp_color * lamp.diffuse * (diff_dot_value * m1.diffuse);
+	vec3 diffuse_light = lamp.diffuse * diff_dot_value * texture(m1.diffuse, tex_coords).rgb;
 
 	vec3 viewer_dirn = normalize(viewer_pos - frag_pos);
 	vec3 reflected_dirn = reflect(-lamp_dirn, normal);
 	float specular_dot_value = pow(max(dot(viewer_dirn, reflected_dirn), 0.0f), m1.shininess);
-	vec3 specular_light = lamp_color * lamp.specular * (specular_dot_value * m1.specular);
+	vec3 specular_light = lamp.specular * specular_dot_value * texture(m1.specular, tex_coords).rgb;
 
 	vec3 result = (ambient_light + diffuse_light + specular_light);
 	FragColor = vec4(result, 1.0f);

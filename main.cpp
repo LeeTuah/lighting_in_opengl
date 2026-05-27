@@ -1,5 +1,3 @@
-# define STB_IMAGE_IMPLEMENTATION
-
 # include <glad/glad.h>
 # include <GLFW/glfw3.h>
 
@@ -7,9 +5,9 @@
 # include <glm/gtc/matrix_transform.hpp>
 # include <glm/gtc/type_ptr.hpp>
 
-# include "include/stb_image.h"
 # include "include/camera.hpp"
 # include "include/shaders.hpp"
+# include "include/texture.hpp"
 
 const int SCR_WIDTH = 1280;
 const int SCR_HEIGHT = 720;
@@ -21,14 +19,26 @@ Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 float delta_time = 0.0f;
 float last_time = 0.0f;
 
+float flashlight_cooldown = 1.0f;
+float flashlight_start = 0.0f;
+
 float last_mouse_x = SCR_WIDTH / 2;
 float last_mouse_y = SCR_HEIGHT / 2;
+
+bool flashlight = false;
 
 void process_input(GLFWwindow* window) {
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camera.process_keyboard(FORWARD, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camera.process_keyboard(BACKWARD, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) camera.process_keyboard(LEFT, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) camera.process_keyboard(RIGHT, delta_time);
+	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
+		float current_flash_time = glfwGetTime();
+		if (current_flash_time - flashlight_start > flashlight_cooldown) {
+			flashlight = not flashlight;
+			flashlight_start = current_flash_time;
+		}
+	}
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, 1);
 }
 
@@ -68,57 +78,57 @@ int main() {
 	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-	Shader lamp_shader("lightingtest.vert", "lamplight.frag");
+	Shader lamp_shader("lamplight.vert", "lamplight.frag");
 	lamp_shader.use();
 
 	Shader main_shader("lightingtest.vert", "lightingtest.frag");
 	main_shader.use();
 	
-	const unsigned int stride = 6;
+	const unsigned int stride = 8;
 	float rect_vertices[] = {
-        // coords             // normals
-        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
-        0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
-        0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
-        0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
-        -0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
-        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
+        // positions          // normals           // tex coord
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
 
-        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
-        0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
-        0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
-        0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
-        -0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
-        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
 
-        -0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f,
-        -0.5f, 0.5f, -0.5f, -1.0f, 0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f,
-        -0.5f, -0.5f, 0.5f, -1.0f, 0.0f, 0.0f,
-        -0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
 
-        0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f,
-        0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f,
-        0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f,
-        0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f,
-        0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f,
-        0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
 
-        -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f,
-        0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f,
-        0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f,
-        0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f,
-        -0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
 
-        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-        0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-        0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f,
-        0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f,
-        -0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f,
-        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f
-	};
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
+    };
 
 	const float stretch[] = {1.0f, 1.0f, 1.0f}; // x, y, z
     float triangle_vertices[] = {
@@ -159,6 +169,9 @@ int main() {
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void *)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void *)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+
 	glBindVertexArray(0);
 
 	glClearColor(0.2f, 0.2f, 0.4f, 1.0f);
@@ -168,6 +181,9 @@ int main() {
 
 	glm::vec3 lamp_pos(1.2f, 1.0f, 2.0f);
 	glm::vec3 object_pos(0.0f, 0.0f, 6.7f);
+
+	Texture2D container_tex("assets/container2.png");
+	Texture2D container_spec_tex("assets/container2_specular.png");
 
 	while (not glfwWindowShouldClose(window)) {
 		glfwSwapBuffers(window);
@@ -203,6 +219,15 @@ int main() {
 		lamp_shader.set_matrix4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
+		if (flashlight) {
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, camera.position);
+			model = glm::scale(model, glm::vec3(0.001f));
+
+			lamp_shader.set_matrix4("model", model);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
+
 		main_shader.use();
 		main_shader.set_matrix4("view", view);
 		main_shader.set_matrix4("projection", projection);
@@ -215,13 +240,18 @@ int main() {
 		main_shader.set_float3("lamp_color", lamp_color);
 		main_shader.set_float3("object_color", object_color);
 		
-		main_shader.set_float3("m1.ambient", glm::vec3(0.1f));
-		main_shader.set_float3("m1.diffuse", object_color * glm::vec3(0.9f));
-		main_shader.set_float3("m1.specular", glm::vec3(0.7f));
+		glActiveTexture(GL_TEXTURE0);
+		container_tex.bind();
+
+		glActiveTexture(GL_TEXTURE1);
+		container_spec_tex.bind();
+
+		main_shader.set_int("m1.diffuse", 0);
+		main_shader.set_int("m1.specular", 1);
 		main_shader.set_float("m1.shininess", 32.0f);
 
-		main_shader.set_float3("lamp.ambient", lamp_color * glm::vec3(0.1f, 0.1f, 0.1f));
-		main_shader.set_float3("lamp.diffuse", lamp_color * glm::vec3(0.6f, 0.6f, 0.6f));
+		main_shader.set_float3("lamp.ambient", glm::vec3(0.2f));
+		main_shader.set_float3("lamp.diffuse", glm::vec3(0.6f));
 		main_shader.set_float3("lamp.specular", glm::vec3(1.0f));
 
 		glDrawArrays(GL_TRIANGLES, 0, 36);
