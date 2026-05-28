@@ -19,9 +19,6 @@ Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 float delta_time = 0.0f;
 float last_time = 0.0f;
 
-float flashlight_cooldown = 1.0f;
-float flashlight_start = 0.0f;
-
 float last_mouse_x = SCR_WIDTH / 2;
 float last_mouse_y = SCR_HEIGHT / 2;
 
@@ -32,13 +29,6 @@ void process_input(GLFWwindow* window) {
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camera.process_keyboard(BACKWARD, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) camera.process_keyboard(LEFT, delta_time);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) camera.process_keyboard(RIGHT, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
-		float current_flash_time = glfwGetTime();
-		if (current_flash_time - flashlight_start > flashlight_cooldown) {
-			flashlight = not flashlight;
-			flashlight_start = current_flash_time;
-		}
-	}
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, 1);
 }
 
@@ -130,6 +120,19 @@ int main() {
         -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
     };
 
+	glm::vec3 cube_positions[] = {
+        glm::vec3( 0.0f,  0.0f,  0.0f),
+        glm::vec3( 2.0f,  5.0f, -15.0f),
+        glm::vec3(-1.5f, -2.2f, -2.5f),
+        glm::vec3(-3.8f, -2.0f, -12.3f),
+        glm::vec3( 2.4f, -0.4f, -3.5f),
+        glm::vec3(-1.7f,  3.0f, -7.5f),
+        glm::vec3( 1.3f, -2.0f, -2.5f),
+        glm::vec3( 1.5f,  2.0f, -2.5f),
+        glm::vec3( 1.5f,  0.2f, -1.5f),
+        glm::vec3(-1.3f,  1.0f, -1.5f)
+    };
+
 	const float stretch[] = {1.0f, 1.0f, 1.0f}; // x, y, z
     float triangle_vertices[] = {
         // bottom face
@@ -169,7 +172,7 @@ int main() {
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void *)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void *)(6 * sizeof(float)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void *)(6 * sizeof(float)));
 	glEnableVertexAttribArray(2);
 
 	glBindVertexArray(0);
@@ -179,12 +182,12 @@ int main() {
 	glm::vec3 object_color(0.1f, 0.3f, 0.6f);
 	glm::vec3 lamp_color(1.0f, 1.0f, 1.0f);
 
-	glm::vec3 lamp_pos(1.2f, 1.0f, 2.0f);
-	glm::vec3 object_pos(0.0f, 0.0f, 6.7f);
+	glm::vec3 lamp_pos(7.2f, 1.0f, 2.0f);
+	// glm::vec3 object_pos(0.0f, 0.0f, 6.7f);
 
 	Texture2D container_tex("assets/container2.png");
 	Texture2D container_spec_tex("assets/container2_specular.png");
-	Texture2D matrix_tex("assets/matrix.jpg");
+	// Texture2D matrix_tex("assets/matrix.jpg");
 
 	while (not glfwWindowShouldClose(window)) {
 		glfwSwapBuffers(window);
@@ -220,46 +223,52 @@ int main() {
 		lamp_shader.set_matrix4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
-		if (flashlight) { // FIXME: make the flashlight work later
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, camera.position);
-			model = glm::scale(model, glm::vec3(0.001f));
-
-			lamp_shader.set_matrix4("model", model);
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-		}
-
 		main_shader.use();
 		main_shader.set_matrix4("view", view);
 		main_shader.set_matrix4("projection", projection);
 
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, object_pos);
-		main_shader.set_matrix4("model", model);
-
-		main_shader.set_float3("lamp_posn", lamp_pos);
 		main_shader.set_float3("lamp_color", lamp_color);
 		main_shader.set_float3("object_color", object_color);
+		main_shader.set_float3("viewer_pos", camera.position);
 		
 		glActiveTexture(GL_TEXTURE0);
 		container_tex.bind();
-
+		
 		glActiveTexture(GL_TEXTURE1);
 		container_spec_tex.bind();
-
-		glActiveTexture(GL_TEXTURE2);
-		matrix_tex.bind();
-
+		
+		// glActiveTexture(GL_TEXTURE2);
+		// matrix_tex.bind();
+		
 		main_shader.set_int("m1.diffuse", 0);
 		main_shader.set_int("m1.specular", 1);
-		main_shader.set_int("m1.emission", 2);
+		// main_shader.set_int("m1.emission", 2);
 		main_shader.set_float("m1.shininess", 32.0f);
+		
+		// main_shader.set_float3("lamp.position", lamp_pos); // for attenuation
+		main_shader.set_float3("lamp.position", camera.position); // for flashlight
+		main_shader.set_float3("lamp.direction", camera.front);
+		main_shader.set_float("lamp.inner_cutoff", glm::cos(glm::radians(12.5f)));
+		main_shader.set_float("lamp.outer_cutoff", glm::cos(glm::radians(17.5f)));
 
 		main_shader.set_float3("lamp.ambient", glm::vec3(0.2f));
 		main_shader.set_float3("lamp.diffuse", glm::vec3(0.6f));
 		main_shader.set_float3("lamp.specular", glm::vec3(1.0f));
+		// main_shader.set_float3("lamp.direction", glm::vec3(-0.2f, -1.0f, -0.3f));
 
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		// for attenuation
+		main_shader.set_float("lamp.constant", 1.0f);
+		main_shader.set_float("lamp.linear", 0.040f);
+		main_shader.set_float("lamp.quadratic", 0.0055f);
+
+		for (int i = 0; i < 10; i++) {
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, cube_positions[i]);
+			model = glm::rotate(model, glm::radians(15.0f * i * (float)sin(glfwGetTime())), glm::normalize(glm::vec3(1.0f)));
+			main_shader.set_matrix4("model", model);
+
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 	}
 
 	glfwTerminate();

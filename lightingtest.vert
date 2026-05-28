@@ -8,23 +8,19 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-uniform vec3 lamp_posn;
-
 out vec3 normal;
 out vec3 frag_pos;
-out vec3 lamp_pos;
 out vec2 tex_coords;
 
 void main() {
-	mat4 vm = view * model;
+	// mat4 vm = view * model;
 
-	mat3 normal_matrix = mat3(transpose(inverse(vm)));
+	mat3 normal_matrix = mat3(transpose(inverse(model)));
 	normal = normalize(normal_matrix * a_normal);
 
-	frag_pos = vec3(vm * vec4(vec_pos, 1.0f));
-	lamp_pos = vec3(view * vec4(lamp_posn, 1.0f));
+	frag_pos = vec3(model * vec4(vec_pos, 1.0f));
 
 	tex_coords = a_tex_coords;
 
-	gl_Position = projection * vm * vec4(vec_pos, 1.0f);
+	gl_Position = projection * view * model * vec4(vec_pos, 1.0f);
 }
