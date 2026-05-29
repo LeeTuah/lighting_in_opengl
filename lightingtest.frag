@@ -8,21 +8,40 @@ struct Material {
 	float shininess;
 };
 
-struct Light {
+struct DirectionalLight {
+	vec3 direction;
+
 	vec3 ambient;
 	vec3 diffuse;
 	vec3 specular;
+};
 
-	vec3 position; 
-	// vec3 direction; // for global light (dirn of light)
-	vec3 direction; // for spotlight (dirn of spotlight)
-	float inner_cutoff;
-	float outer_cutoff;
+struct PointLight {
+	vec3 position;
 
-	// for attenuation light caster
 	float constant;
 	float linear;
 	float quadratic;
+
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
+};
+
+struct Spotlight {
+	vec3 position;
+	
+	vec3 direction;
+	float inner_cutoff;
+	float outer_cutoff;
+
+	float constant;
+	float linear;
+	float quadratic;
+
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
 };
 
 in vec3 normal;
@@ -31,41 +50,88 @@ in vec2 tex_coords;
 
 out vec4 FragColor;
 
-uniform vec3 lamp_color;
-uniform vec3 object_color;
 uniform vec3 viewer_pos;
 
 uniform Material m1;
-uniform Light lamp;
+
+vec3 calc_directional_light(DirectionalLight light, Material material, vec2 tex_coord, vec3 normal, vec3 viewer_dirn) {
+	vec3 light_direction = normalize(-light.direction);
+
+	vec3 ambient_light = light.ambient * texture(material.diffuse, tex_coord).rgb;
+
+	float diffuse_dot_value = max(dot(light_direction, normal), 0.0f);
+	vec3 diffuse_light = light.diffuse * diffuse_dot_value * texture(material.diffuse, tex_coord).rgb;
+
+	vec3 reflected_dirn = reflect(-light_direction, normal);
+	float specular_dot_value = pow(max(dot(reflected_dirn, viewer_dirn), 0.0f), material.shininess);
+	vec3 specular_light = light.specular * specular_dot_value * texture(material.specular, tex_coord).rgb;
+
+	return (ambient_light + diffuse_light + specular_light);
+}
+
+vec3 calc_point_light(PointLight light, Material material, vec2 tex_coord, vec3 normal, vec3 fragment_pos, vec3 viewer_dirn) {
+	vec3 light_direction = normalize(light.position - fragment_pos);
+
+	float dist = length(light.position - fragment_pos);
+	float attenuation = 1.0 / (light.constant + (light.linear * dist) + (light.quadratic * dist * dist));
+
+	vec3 ambient_light = light.ambient * texture(material.diffuse, tex_coord).rgb * attenuation;
+
+	float diffuse_dot_value = max(dot(light_direction, normal), 0.0f);
+	vec3 diffuse_light = light.diffuse * diffuse_dot_value * texture(material.diffuse, tex_coord).rgb * attenuation;
+
+	vec3 reflected_dirn = reflect(-light_direction, normal);
+	float specular_dot_value = pow(max(dot(reflected_dirn, viewer_dirn), 0.0f), material.shininess);
+	vec3 specular_light = light.specular * specular_dot_value * texture(material.specular, tex_coord).rgb * attenuation;
+
+	return (ambient_light + diffuse_light + specular_light);
+}
+
+vec3 calc_spotlight(Spotlight light, Material material, vec2 tex_coord, vec3 normal, vec3 fragment_pos, vec3 viewer_dirn) {
+	vec3 light_direction = normalize(-light.direction);
+	vec3 light_dir_from_fragment = normalize(light.position - fragment_pos);
+
+	float theta = dot(light_direction, light_dir_from_fragment);
+	if (theta < light.outer_cutoff) return vec3(0.0f);
+
+	float dist = length(light.position - fragment_pos);
+	float attenuation = 1.0 / (light.constant + (dist * light.linear) + (dist * dist * light.quadratic));
+
+	float epsilon = light.inner_cutoff - light.outer_cutoff;
+	float intensity = clamp((theta - light.outer_cutoff) / epsilon, 0.0f, 1.0f);
+
+	vec3 ambient_light = light.ambient * texture(material.diffuse, tex_coord).rgb * attenuation * intensity;
+
+	float diffuse_dot_value = max(dot(light_dir_from_fragment, normal), 0.0f);
+	vec3 diffuse_light = light.diffuse * diffuse_dot_value * texture(material.diffuse, tex_coord).rgb * attenuation * intensity;
+
+	vec3 reflected_dirn = reflect(-light_dir_from_fragment, normal);
+	float specular_dot_value = pow(max(dot(reflected_dirn, viewer_dirn), 0.0f), material.shininess);
+	vec3 specular_light = light.specular * specular_dot_value * texture(material.specular, tex_coord).rgb * attenuation * intensity;
+
+	return (ambient_light + diffuse_light + specular_light);
+}
+
+uniform DirectionalLight sun;
+
+# define TOTAL_POINT_LIGHTS 4
+uniform PointLight point_lights[TOTAL_POINT_LIGHTS];
+
+uniform Spotlight flashlight;
 
 void main() {
-	// vec3 norm = normalize(normal);
-	vec3 lamp_dirn = normalize(lamp.position - frag_pos);
+	vec3 norm = normalize(normal);
+	vec3 viewer_dirn = normalize(viewer_pos - frag_pos);
 	vec3 result = vec3(0.0f, 0.0f, 0.0f);
 
-	// for attenuation light
-	float dist = length(lamp.position - frag_pos);
-	float attenuation = 1.0 / (lamp.constant + (lamp.linear * dist) + (lamp.quadratic * dist * dist));
+	result += calc_directional_light(sun, m1, tex_coords, norm, viewer_dirn);
 
-	// for spotlight
-	float theta = dot(normalize(-lamp.direction), lamp_dirn);
-	float epsilon = lamp.inner_cutoff - lamp.outer_cutoff;
-	float intensity = clamp((theta - lamp.outer_cutoff) / epsilon, 0.0f, 1.0f);
-	
-	vec3 ambient_light = lamp.ambient * texture(m1.diffuse, tex_coords).rgb * attenuation;
+	for (int i = 0; i < TOTAL_POINT_LIGHTS; i++) 
+		result += calc_point_light(point_lights[i], m1, tex_coords, norm, frag_pos, viewer_dirn);
 
-	// vec3 lamp_dirn = normalize(-lamp.direction);	// for global light
-	float diff_dot_value = max(dot(normal, lamp_dirn), 0);
-	vec3 diffuse_light = lamp.diffuse * diff_dot_value * texture(m1.diffuse, tex_coords).rgb * attenuation * intensity;
-
-
-	vec3 viewer_dirn = normalize(viewer_pos - frag_pos);
-	vec3 reflected_dirn = reflect(-lamp_dirn, normal);
-	float specular_dot_value = pow(max(dot(viewer_dirn, reflected_dirn), 0.0f), m1.shininess);
-	vec3 specular_light = lamp.specular * specular_dot_value * texture(m1.specular, tex_coords).rgb * attenuation * intensity;
-
+	result += calc_spotlight(flashlight, m1, tex_coords, norm, frag_pos, viewer_dirn);
 	// vec3 emission_light = texture(m1.emission, tex_coords).rgb;
 
-	result = ambient_light + diffuse_light + specular_light /* + emission_light */;
+	// result += emission_light;
 	FragColor = vec4(result, 1.0f);
 }
