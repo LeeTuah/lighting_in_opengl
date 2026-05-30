@@ -1,0 +1,28 @@
+# Learning Lighting in OpenGL
+
+This project helped me to learn the basics of lighting in OpenGL, from just having a source light to having multiple light casters and different types of lights. It was a ton of fun making everything come to light.
+
+## Overview
+
+I managed to render an eerie minecraft alpha-style scene, with a broken tower, naked birch trees and a giant moon, representing the ARG or creepypasta themed minecraft content. 
+
+## Demo Video
+
+[!] Add demo video here later
+
+## Screenshots
+
+[!] Screenshots Added here later
+
+## Tech Stack
+
+1. Language: C++
+2. Graphics API: OpenGL (Version 3.3 Core)
+3. Libraries: GLFW, GLAD, GLM and stb_image.h
+
+## Controls
+
+1. `W, A, S, D` to move around
+2. `Mouse` to look around
+3. `F` for flashlight
+4. `ESC` to close the render
