@@ -8,11 +8,15 @@ I managed to render an eerie minecraft alpha-style scene, with a broken tower, n
 
 ## Demo Video
 
-[!] Add demo video here later
+[![CLI Sweeper Demo Video](https://img.youtube.com/vi/gmZmyQ0Wg2s/maxresdefault.jpg)](https://www.youtube.com/watch?v=gmZmyQ0Wg2s)
 
 ## Screenshots
 
-[!] Screenshots Added here later
+![opengl render](assets/image1.png)
+![opengl render](assets/image2.png)
+![opengl render](assets/image3.png)
+![opengl render](assets/image4.png)
+
 
 ## Tech Stack
 
