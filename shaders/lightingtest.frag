@@ -3,7 +3,6 @@
 struct Material {
 	sampler2D diffuse;
 	sampler2D specular;
-	// sampler2D emission; // for exercise
 	
 	float shininess;
 };
@@ -14,6 +13,8 @@ struct DirectionalLight {
 	vec3 ambient;
 	vec3 diffuse;
 	vec3 specular;
+
+	vec3 color;
 };
 
 struct PointLight {
@@ -26,6 +27,8 @@ struct PointLight {
 	vec3 ambient;
 	vec3 diffuse;
 	vec3 specular;
+
+	vec3 color;
 };
 
 struct Spotlight {
@@ -42,6 +45,8 @@ struct Spotlight {
 	vec3 ambient;
 	vec3 diffuse;
 	vec3 specular;
+
+	vec3 color;
 };
 
 in vec3 normal;
@@ -57,10 +62,10 @@ uniform Material m1;
 vec3 calc_directional_light(DirectionalLight light, Material material, vec2 tex_coord, vec3 normal, vec3 viewer_dirn) {
 	vec3 light_direction = normalize(-light.direction);
 
-	vec3 ambient_light = light.ambient * texture(material.diffuse, tex_coord).rgb;
+	vec3 ambient_light = light.color * light.ambient * texture(material.diffuse, tex_coord).rgb;
 
 	float diffuse_dot_value = max(dot(light_direction, normal), 0.0f);
-	vec3 diffuse_light = light.diffuse * diffuse_dot_value * texture(material.diffuse, tex_coord).rgb;
+	vec3 diffuse_light = light.color * light.diffuse * diffuse_dot_value * texture(material.diffuse, tex_coord).rgb;
 
 	vec3 reflected_dirn = reflect(-light_direction, normal);
 	float specular_dot_value = pow(max(dot(reflected_dirn, viewer_dirn), 0.0f), material.shininess);
@@ -75,10 +80,10 @@ vec3 calc_point_light(PointLight light, Material material, vec2 tex_coord, vec3 
 	float dist = length(light.position - fragment_pos);
 	float attenuation = 1.0 / (light.constant + (light.linear * dist) + (light.quadratic * dist * dist));
 
-	vec3 ambient_light = light.ambient * texture(material.diffuse, tex_coord).rgb * attenuation;
+	vec3 ambient_light = light.color * light.ambient * texture(material.diffuse, tex_coord).rgb * attenuation;
 
 	float diffuse_dot_value = max(dot(light_direction, normal), 0.0f);
-	vec3 diffuse_light = light.diffuse * diffuse_dot_value * texture(material.diffuse, tex_coord).rgb * attenuation;
+	vec3 diffuse_light = light.color * light.diffuse * diffuse_dot_value * texture(material.diffuse, tex_coord).rgb * attenuation;
 
 	vec3 reflected_dirn = reflect(-light_direction, normal);
 	float specular_dot_value = pow(max(dot(reflected_dirn, viewer_dirn), 0.0f), material.shininess);
@@ -100,10 +105,10 @@ vec3 calc_spotlight(Spotlight light, Material material, vec2 tex_coord, vec3 nor
 	float epsilon = light.inner_cutoff - light.outer_cutoff;
 	float intensity = clamp((theta - light.outer_cutoff) / epsilon, 0.0f, 1.0f);
 
-	vec3 ambient_light = light.ambient * texture(material.diffuse, tex_coord).rgb * attenuation * intensity;
+	vec3 ambient_light = light.color * light.ambient * texture(material.diffuse, tex_coord).rgb * attenuation * intensity;
 
 	float diffuse_dot_value = max(dot(light_dir_from_fragment, normal), 0.0f);
-	vec3 diffuse_light = light.diffuse * diffuse_dot_value * texture(material.diffuse, tex_coord).rgb * attenuation * intensity;
+	vec3 diffuse_light = light.color * light.diffuse * diffuse_dot_value * texture(material.diffuse, tex_coord).rgb * attenuation * intensity;
 
 	vec3 reflected_dirn = reflect(-light_dir_from_fragment, normal);
 	float specular_dot_value = pow(max(dot(reflected_dirn, viewer_dirn), 0.0f), material.shininess);
@@ -113,10 +118,7 @@ vec3 calc_spotlight(Spotlight light, Material material, vec2 tex_coord, vec3 nor
 }
 
 uniform DirectionalLight sun;
-
-# define TOTAL_POINT_LIGHTS 4
-uniform PointLight point_lights[TOTAL_POINT_LIGHTS];
-
+uniform PointLight campfire;
 uniform Spotlight flashlight;
 
 void main() {
@@ -125,13 +127,8 @@ void main() {
 	vec3 result = vec3(0.0f, 0.0f, 0.0f);
 
 	result += calc_directional_light(sun, m1, tex_coords, norm, viewer_dirn);
-
-	for (int i = 0; i < TOTAL_POINT_LIGHTS; i++) 
-		result += calc_point_light(point_lights[i], m1, tex_coords, norm, frag_pos, viewer_dirn);
-
+	result += calc_point_light(campfire, m1, tex_coords, norm, frag_pos, viewer_dirn);
 	result += calc_spotlight(flashlight, m1, tex_coords, norm, frag_pos, viewer_dirn);
-	// vec3 emission_light = texture(m1.emission, tex_coords).rgb;
-
-	// result += emission_light;
+	
 	FragColor = vec4(result, 1.0f);
 }

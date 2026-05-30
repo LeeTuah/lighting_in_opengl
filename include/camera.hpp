@@ -16,7 +16,7 @@ enum camera_moves {
 
 const float YAW = -89.0f;
 const float PITCH = 0.0f;
-const float SPEED = 5.0f;
+const float SPEED = 2.67f;
 const float SENSITIVITY = 0.041f;
 const float ZOOM = 55.0f;
 
@@ -36,6 +36,8 @@ public:
 	float movement_speed;
 	float sensitivity;
 	float zoom;
+
+	bool allow_flight;
 
 	Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 world_up = glm::vec3(0.0f, 1.0f, 0.0f));
 
@@ -59,6 +61,7 @@ Camera::Camera(glm::vec3 position, glm::vec3 world_up) {
 	movement_speed = SPEED;
 	sensitivity = SENSITIVITY;
 	zoom = ZOOM;
+	allow_flight = false;
 
 	this->update_camera_vectors();
 }
@@ -69,12 +72,14 @@ glm::mat4 Camera::get_view_matrix() {
 
 void Camera::process_keyboard(camera_moves direction, float delta_time, bool print_camera_coords) {
 	float velocity = movement_speed * delta_time;
+	glm::vec3 old_position = position;
 
 	if (direction == FORWARD) position += front * velocity;
 	else if (direction == BACKWARD) position -= front * velocity;
 	else if (direction == RIGHT) position += right * velocity;
 	else if (direction == LEFT) position -= right * velocity;
 
+	if (not allow_flight) position.y = old_position.y;
 	if (print_camera_coords) print_camera_coordinates();
 }
 

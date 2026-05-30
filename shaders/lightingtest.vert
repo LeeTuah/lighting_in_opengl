@@ -13,8 +13,6 @@ out vec3 frag_pos;
 out vec2 tex_coords;
 
 void main() {
-	// mat4 vm = view * model;
-
 	mat3 normal_matrix = mat3(transpose(inverse(model)));
 	normal = normalize(normal_matrix * a_normal);
 

@@ -9,6 +9,8 @@
 # include "stb_image.h"
 
 # include <iostream>
+# include <vector>
+# include <string>
 
 class Texture2D{
 public:
@@ -34,7 +36,7 @@ Texture2D::Texture2D(const char* texture_path) {
 
 	unsigned char* data = stbi_load(texture_path, &width, &height, &nr_channels, 0);
 	if (data) {
-		GLenum format;
+		unsigned int format;
 	
 		if (nr_channels == 1) format = GL_RED;
 		else if (nr_channels == 3) format = GL_RGB;

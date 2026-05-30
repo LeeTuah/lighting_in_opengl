@@ -10,15 +10,18 @@
 # include "include/texture.hpp"
 
 # include <string>
-
-# define TOTAL_POINT_LIGHTS 4
+# include <algorithm>
+# include <iterator>
+# include <random>
 
 const int SCR_WIDTH = 1280;
 const int SCR_HEIGHT = 720;
 
+const float GROUND_LEVEL = -3.0f;
+
 bool first_mouse_input = true;
 
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(9.0f, GROUND_LEVEL + 2, 13.0f));
 
 float delta_time = 0.0f;
 float last_time = 0.0f;
@@ -31,11 +34,21 @@ bool flashlight = false;
 float last_flashlight_time = 0.0f;
 float flashlight_cooldown = 0.35f;
 
+int random_number(int begin, int end){
+    std::random_device rd;
+    std::mt19937 generator(rd());
+
+    std::uniform_int_distribution<> distrib(begin, end);
+    return distrib(generator);
+}
+
 void process_input(GLFWwindow* window) {
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camera.process_keyboard(FORWARD, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camera.process_keyboard(BACKWARD, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) camera.process_keyboard(LEFT, delta_time);
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) camera.process_keyboard(RIGHT, delta_time);
+	bool print_camera_coords = false;
+
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camera.process_keyboard(FORWARD, delta_time, print_camera_coords);
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camera.process_keyboard(BACKWARD, delta_time, print_camera_coords);
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) camera.process_keyboard(LEFT, delta_time, print_camera_coords);
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) camera.process_keyboard(RIGHT, delta_time, print_camera_coords);
 
 	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
 		float current_time = glfwGetTime();
@@ -84,76 +97,143 @@ int main() {
 	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-	Shader lamp_shader("lamplight.vert", "lamplight.frag");
+	Shader lamp_shader("shaders/lamplight.vert", "shaders/lamplight.frag");
 	lamp_shader.use();
 
-	Shader main_shader("lightingtest.vert", "lightingtest.frag");
+	Shader moon_shader("shaders/moon.vert", "shaders/moon.frag");
+	moon_shader.use();
+
+	Shader main_shader("shaders/lightingtest.vert", "shaders/lightingtest.frag");
 	main_shader.use();
 	
 	const unsigned int stride = 8;
 	float rect_vertices[] = {
-        // positions          // normals           // tex coord
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+		// vertex coords      // normals           // tex coords
+		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+		0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
+		0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+		0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
 
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+		
+		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+		0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
+		0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+		0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
 
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f, 
+		-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f, 
+		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f, 
+		-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f, 
+		-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f, 
+		-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f, 
 
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+		0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f, 
+		0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f, 
+		0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f, 
+		0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f, 
+		0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f, 
+		0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f, 
 
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+		
+		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+		0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
+		0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+		0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
 
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
-    };
+		
+		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
+		0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
+		0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+		0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
+	};
 
-	glm::vec3 cube_positions[] = {
-        glm::vec3( 0.0f,  0.0f,  0.0f),
-        glm::vec3( 2.0f,  5.0f, -15.0f),
-        glm::vec3(-1.5f, -2.2f, -2.5f),
-        glm::vec3(-3.8f, -2.0f, -12.3f),
-        glm::vec3( 2.4f, -0.4f, -3.5f),
-        glm::vec3(-1.7f,  3.0f, -7.5f),
-        glm::vec3( 1.3f, -2.0f, -2.5f),
-        glm::vec3( 1.5f,  2.0f, -2.5f),
-        glm::vec3( 1.5f,  0.2f, -1.5f),
-        glm::vec3(-1.3f,  1.0f, -1.5f)
-    };
+	const unsigned int moon_stride = 4;
+	float moon_vertices[] = {
+		-1.0f,  1.0f,   0.0f, 1.0f, 
+		-1.0f, -1.0f,   0.0f, 0.0f,  
+		1.0f, -1.0f,   1.0f, 0.0f, 
 
-	glm::vec3 point_light_positions[] = {
-		glm::vec3( 0.7f, 0.2f, 2.0f),
-		glm::vec3( 2.3f, -3.3f, -4.0f),
-		glm::vec3(-4.0f, 2.0f, -12.0f),
-		glm::vec3( 0.0f, 0.0f, -3.0f)
+		-1.0f,  1.0f,   0.0f, 1.0f,  
+		1.0f, -1.0f,   1.0f, 0.0f,
+		1.0f,  1.0f,   1.0f, 1.0f  
+	};
+
+	const int TOWER_BASE_BLOCKS = 16;
+	const int TOWER_HEIGHT = 10;
+	glm::vec3 tower_base_positions[] = {
+		glm::vec3(6.0f, GROUND_LEVEL + 1, 6.0f),
+		glm::vec3(6.0f, GROUND_LEVEL + 1, 7.0f),
+		glm::vec3(6.0f, GROUND_LEVEL + 1, 8.0f),
+
+		glm::vec3(7.0f, GROUND_LEVEL + 1, 9.0f),
+
+		glm::vec3(8.0f, GROUND_LEVEL + 1, 10.0f),
+		glm::vec3(9.0f, GROUND_LEVEL + 1, 10.0f),
+		glm::vec3(10.0f, GROUND_LEVEL + 1, 10.0f),
+
+		glm::vec3(11.0f, GROUND_LEVEL + 1, 9.0f),
+
+		glm::vec3(12.0f, GROUND_LEVEL + 1, 8.0f),
+		glm::vec3(12.0f, GROUND_LEVEL + 1, 7.0f),
+		glm::vec3(12.0f, GROUND_LEVEL + 1, 6.0f),
+
+		glm::vec3(11.0f, GROUND_LEVEL + 1, 5.0f),
+
+		glm::vec3(10.0f, GROUND_LEVEL + 1, 4.0f),
+		glm::vec3(9.0f, GROUND_LEVEL + 1, 4.0f),
+		glm::vec3(8.0f, GROUND_LEVEL + 1, 4.0f),
+
+		glm::vec3(7.0f, GROUND_LEVEL + 1, 5.0f),
+	};
+
+	glm::vec3 tower_ignore_blocks[] = {
+		glm::vec3(9.0f, GROUND_LEVEL + 1, 10.0f),
+		glm::vec3(9.0f, GROUND_LEVEL + 2, 10.0f),
+		glm::vec3(6.0f, GROUND_LEVEL + 2, 7.0f),
+		glm::vec3(6.0f, GROUND_LEVEL + 3, 7.0f),
+		glm::vec3(9.0f, GROUND_LEVEL + 2, 4.0f),
+		glm::vec3(9.0f, GROUND_LEVEL + 3, 4.0f),
+		glm::vec3(12.0f, GROUND_LEVEL + 2, 7.0f),
+		glm::vec3(12.0f, GROUND_LEVEL + 3, 7.0f),
+		glm::vec3(6.0f, GROUND_LEVEL + 10, 6.0f),
+		glm::vec3(6.0f, GROUND_LEVEL + 10, 7.0f),
+		glm::vec3(9.0f, GROUND_LEVEL + 10, 10.0f),
+		glm::vec3(10.0f, GROUND_LEVEL + 10, 10.0f),
+		glm::vec3(11.0f, GROUND_LEVEL + 10, 9.0f),
+		glm::vec3(12.0f, GROUND_LEVEL + 10, 8.0f),
+		glm::vec3(12.0f, GROUND_LEVEL + 10, 7.0f),
+		glm::vec3(6.0f, GROUND_LEVEL + 9, 6.0f),
+		glm::vec3(10.0f, GROUND_LEVEL + 9, 10.0f),
+		glm::vec3(11.0f, GROUND_LEVEL + 9, 9.0f),
+		glm::vec3(12.0f, GROUND_LEVEL + 9, 8.0f),
+		glm::vec3(11.0f, GROUND_LEVEL + 8, 9.0f)
+	};
+
+	const int TREE_HEIGHT = 2;
+	glm::vec3 birch_tree_coords[] = {
+		glm::vec3(18.0f, GROUND_LEVEL + 1, 10.0f),
+		glm::vec3(14.0f, GROUND_LEVEL + 1, 4.0f),
+		glm::vec3(2.0f, GROUND_LEVEL + 1, 4.0f),
+		glm::vec3(3.0f, GROUND_LEVEL + 1, 13.0f),
+		glm::vec3(11.0f, GROUND_LEVEL + 1, 13.0f),
+	};
+
+	int start_height = 1;
+	int end_height = 3;
+	int birch_heights[] = {
+		random_number(start_height, end_height),
+		random_number(start_height, end_height),
+		random_number(start_height, end_height),
+		random_number(start_height, end_height),
+		random_number(start_height, end_height)
 	};
 
 	const float stretch[] = {1.0f, 1.0f, 1.0f}; // x, y, z
@@ -200,14 +280,43 @@ int main() {
 
 	glBindVertexArray(0);
 
-	glClearColor(0.2f, 0.2f, 0.4f, 1.0f);
+	unsigned int moonVAO, moonVBO;
+
+	glGenVertexArrays(1, &moonVAO);
+	glBindVertexArray(moonVAO);
+
+	glGenBuffers(1, &moonVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, moonVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(moon_vertices), moon_vertices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, moon_stride * sizeof(float), (void *)0);
+	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, moon_stride * sizeof(float), (void *)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	glBindVertexArray(0);
+
+	glClearColor(0.05f, 0.08f, 0.14f, 1.0f);
 
 	glm::vec3 object_color(0.1f, 0.3f, 0.6f);
 	glm::vec3 lamp_color(1.0f, 1.0f, 1.0f);
 
-	Texture2D container_tex("assets/container2.png");
-	Texture2D container_spec_tex("assets/container2_specular.png");
-	// Texture2D matrix_tex("assets/matrix.jpg");
+	Texture2D cobblestone_diffuse("assets/cobblestone_diffuse.png");
+	Texture2D cobblestone_specular("assets/cobblestone_specular.png");
+
+	Texture2D grass_diffuse("assets/grass_diffuse.jpg");
+	Texture2D grass_specular("assets/grass_specular.png");
+
+	Texture2D sea_lantern_diffuse("assets/sea_lantern_diffuse.png");
+	
+	Texture2D birch_log("assets/birch_log.jpg");
+
+	Texture2D moon_tex("assets/moon.png");
+	Texture2D black("assets/black.png");
+
+	glm::vec3 campfire_coords = glm::vec3(9.0f, GROUND_LEVEL + 1, 7.0f);
+	glm::vec3 campfire_color = glm::vec3(1.0f, 0.4f, 0.1f);
 
 	while (not glfwWindowShouldClose(window)) {
 		glfwSwapBuffers(window);
@@ -230,22 +339,42 @@ int main() {
 
 		glm::mat4 model(1.0f);
 
+		moon_shader.use();
+		moon_shader.set_matrix4("view", view);
+		moon_shader.set_matrix4("projection", projection);
+
+		glBindVertexArray(moonVAO);
+
+		glActiveTexture(GL_TEXTURE0);
+		moon_tex.bind();
+
+		moon_shader.set_int("tex", 0);
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(9.0f, GROUND_LEVEL + 40, -51.0f));
+		model = glm::scale(model, glm::vec3(15.0f));
+		model = glm::rotate(model, glm::radians(15.0f), glm::normalize(glm::vec3(1.0f, 0.0f, 0.0f)));
+		moon_shader.set_matrix4("model", model);
+
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
 		lamp_shader.use();
 		lamp_shader.set_matrix4("view", view);
 		lamp_shader.set_matrix4("projection", projection);
 
-		lamp_shader.set_float3("lamp_color", lamp_color);
-
 		glBindVertexArray(VAO);
 
-		for (int i = 0; i < TOTAL_POINT_LIGHTS; i++){
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, point_light_positions[i]);
-			model = glm::scale(model, glm::vec3(0.2f));
+		glActiveTexture(GL_TEXTURE0);
+		sea_lantern_diffuse.bind();
 
-			lamp_shader.set_matrix4("model", model);
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-		}
+		lamp_shader.set_float("lamp_texture", 0);
+		lamp_shader.set_float3("lamp_color", glm::vec3(0.7f, 0.7f, 0.5f));
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(9.0f, GROUND_LEVEL + 1, 7.0f));
+		main_shader.set_matrix4("model", model);
+
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		main_shader.use();
 		main_shader.set_matrix4("view", view);
@@ -254,72 +383,111 @@ int main() {
 		main_shader.set_float3("viewer_pos", camera.position);
 		
 		glActiveTexture(GL_TEXTURE0);
-		container_tex.bind();
+		grass_diffuse.bind();
 		
 		glActiveTexture(GL_TEXTURE1);
-		container_spec_tex.bind();
-		
-		// glActiveTexture(GL_TEXTURE2);
-		// matrix_tex.bind();
+		grass_specular.bind();
 		
 		main_shader.set_int("m1.diffuse", 0);
 		main_shader.set_int("m1.specular", 1);
-		// main_shader.set_int("m1.emission", 2);
+		main_shader.set_int("m1.overlay", 2);
 		main_shader.set_float("m1.shininess", 32.0f);
 		
+		main_shader.set_float3("sun.direction", glm::vec3(-0.3f, -1.0f, -0.7f));
 
-		main_shader.set_float3("sun.direction", glm::vec3(-0.2f, -1.0f, -0.3f));
+		main_shader.set_float3("sun.ambient", glm::vec3(0.05f, 0.05f, 0.15f)); 
+		main_shader.set_float3("sun.diffuse", glm::vec3(0.1f, 0.15f, 0.3f));   
+		main_shader.set_float3("sun.specular", glm::vec3(0.2f, 0.2f, 0.3f));
 
-		main_shader.set_float3("sun.ambient", glm::vec3(0.2f));
-		main_shader.set_float3("sun.diffuse", glm::vec3(0.6f));
-		main_shader.set_float3("sun.specular", glm::vec3(1.0f));
+		main_shader.set_float3("sun.color", glm::vec3(1.0f));
 
-		for (int i = 0; i < TOTAL_POINT_LIGHTS; i++) {
-			std::string point_name = "point_lights[" + std::to_string(i) + "].";
-			
-			std::string position = point_name + "position";
+		main_shader.set_float3("campfire.position", campfire_coords);
 
-			std::string constant = point_name + "constant";
-			std::string linear = point_name + "linear";
-			std::string quadratic = point_name + "quadratic";
+		main_shader.set_float("campfire.constant", 1.0f);
+		main_shader.set_float("campfire.linear", 0.045f);
+		main_shader.set_float("campfire.quadratic", 0.0075f);
 
-			std::string ambient = point_name + "ambient";
-			std::string diffuse = point_name + "diffuse";
-			std::string specular = point_name + "specular";
+		main_shader.set_float3("campfire.ambient", glm::vec3(0.1f));
+		main_shader.set_float3("campfire.diffuse", glm::vec3(0.9f));
+		main_shader.set_float3("campfire.specular", glm::vec3(1.0f));
 
-			main_shader.set_float3(position.c_str(), point_light_positions[i]);
-
-			main_shader.set_float(constant.c_str(), 1.0f);
-			main_shader.set_float(linear.c_str(), 0.040f);
-			main_shader.set_float(quadratic.c_str(), 0.0055f);
-
-			main_shader.set_float3(ambient.c_str(), glm::vec3(0.2f));
-			main_shader.set_float3(diffuse.c_str(), glm::vec3(0.6f));
-			main_shader.set_float3(specular.c_str(), glm::vec3(1.0f));
-		}
+		main_shader.set_float3("campfire.color", campfire_color);
 
 		main_shader.set_float3("flashlight.position", camera.position);
 		main_shader.set_float3("flashlight.direction", camera.front);
 
-		main_shader.set_float("flashlight.inner_cutoff", flashlight ? glm::cos(glm::radians(12.5f)) : glm::cos(glm::radians(0.0f)));
-		main_shader.set_float("flashlight.outer_cutoff", flashlight ? glm::cos(glm::radians(17.5f)) : glm::cos(glm::radians(0.0f)));
+		main_shader.set_float("flashlight.inner_cutoff", flashlight ? glm::cos(glm::radians(9.5f)) : glm::cos(glm::radians(0.0f)));
+		main_shader.set_float("flashlight.outer_cutoff", flashlight ? glm::cos(glm::radians(11.5f)) : glm::cos(glm::radians(0.0f)));
 
 		main_shader.set_float("flashlight.constant", 1.0f);
-		main_shader.set_float("flashlight.linear", 0.040f);
-		main_shader.set_float("flashlight.quadratic", 0.0055f);
+		main_shader.set_float("flashlight.linear", 0.022f);
+		main_shader.set_float("flashlight.quadratic", 0.0019f);
 
 		main_shader.set_float3("flashlight.ambient", glm::vec3(0.2f));
 		main_shader.set_float3("flashlight.diffuse", glm::vec3(0.6f));
 		main_shader.set_float3("flashlight.specular", glm::vec3(1.0f));
 
-		for (int i = 0; i < 10; i++) {
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, cube_positions[i]);
-			model = glm::rotate(model, glm::radians(15.0f * i * (float)sin(glfwGetTime())), glm::normalize(glm::vec3(1.0f)));
-			main_shader.set_matrix4("model", model);
+		main_shader.set_float3("flashlight.color", glm::vec3(1.0f));
+		
+		int FIELD_SIZE = 20;
+		for (int i = 0; i < FIELD_SIZE; i++) {
+			for (int j = 0; j < FIELD_SIZE; j++) {
+				model = glm::mat4(1.0f);
+				model = glm::translate(model, glm::vec3((float)i, GROUND_LEVEL, (float)j));
+				main_shader.set_matrix4("model", model);
 
-			glDrawArrays(GL_TRIANGLES, 0, 36);
+				glDrawArrays(GL_TRIANGLES, 0, 36);
+			}
 		}
+
+		glActiveTexture(GL_TEXTURE0);
+		cobblestone_diffuse.bind();
+
+		glActiveTexture(GL_TEXTURE1);
+		cobblestone_specular.bind();
+
+		for (int j = 0; j < TOWER_HEIGHT; j++) {
+			for (int i = 0; i < TOWER_BASE_BLOCKS; i++) {
+				glm::vec3 posn = tower_base_positions[i] + glm::vec3(0.0f, (float)j, 0.0f);
+
+				if (std::find(std::begin(tower_ignore_blocks), std::end(tower_ignore_blocks), posn) != std::end(tower_ignore_blocks))
+					continue;
+
+				model = glm::mat4(1.0f);
+				model = glm::translate(model, posn);
+				main_shader.set_matrix4("model", model);
+
+				glDrawArrays(GL_TRIANGLES, 0, 36);
+			}
+		}
+
+		glActiveTexture(GL_TEXTURE0);
+		birch_log.bind();
+
+		glActiveTexture(GL_TEXTURE1);
+		black.bind();
+
+		for (int i = 0; i < std::size(birch_tree_coords); i++) {
+			for (int j = 0; j < TREE_HEIGHT + birch_heights[i]; j++) {
+				model = glm::mat4(1.0f);
+				model = glm::translate(model, birch_tree_coords[i] + glm::vec3(0.0f, (float)j, 0.0f));
+				main_shader.set_matrix4("model", model);
+
+				glDrawArrays(GL_TRIANGLES, 0, 36);
+			}
+		}
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(10.0f, GROUND_LEVEL + 3, 13.0f));
+		main_shader.set_matrix4("model", model);
+
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(12.0f, GROUND_LEVEL + 3, 13.0f));
+		main_shader.set_matrix4("model", model);
+
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 	}
 
 	glfwTerminate();
