@@ -88,6 +88,8 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 }
 
 int main() {
+	camera.allow_flight = false;
+
 	glfwInit();
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -109,6 +111,9 @@ int main() {
 
 	Shader flat_shader("shaders/flat.vert", "shaders/flat.frag");
 	flat_shader.use();
+
+	Shader tall_grass_shader("shaders/flat.vert", "shaders/tallgrass.frag");
+	tall_grass_shader.use();
 
 	Shader main_shader("shaders/lightingtest.vert", "shaders/lightingtest.frag");
 	main_shader.use();
@@ -162,29 +167,18 @@ int main() {
 		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
 	};
 
-	const unsigned int moon_stride = 4;
-	float moon_vertices[] = {
-		-0.5f,  0.5f,   0.0f, 1.0f, 
-		-0.5f, -0.5f,   0.0f, 0.0f,  
-		0.5f, -0.5f,   1.0f, 0.0f, 
+	const unsigned int flat_stride = 5;
+	float flat_vertices[] = {
+		// vertex			// tex
+		-0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 
+		-0.5f, -0.5f, 0.0f, 0.0f, 0.0f,  
+		0.5f, -0.5f,  0.0f, 1.0f, 0.0f, 
 
-		-0.5f,  0.5f,   0.0f, 1.0f,
-		0.5f, -0.5f,   1.0f, 0.0f,
-		0.5f,  0.5f,   1.0f, 1.0f  
+		-0.5f,  0.5f, 0.0f, 0.0f, 1.0f,
+		0.5f, -0.5f,  0.0f, 1.0f, 0.0f,
+		0.5f,  0.5f,  0.0f, 1.0f, 1.0f  
 	};
 
-	const unsigned int tall_grass_stride = 4;
-	float tall_grass_vertices[] = {
-		-0.5f,  1.5f,   0.0f, 1.0f, 
-		-0.5f, -0.5f,   0.0f, 0.0f,  
-		0.5f, -0.5f,   1.0f, 0.0f, 
-
-		-0.5f,  1.5f,   0.0f, 1.0f,
-		0.5f, -0.5f,   1.0f, 0.0f,
-		0.5f,  1.5f,   1.0f, 1.0f  
-	};
-
-	const int TOWER_BASE_BLOCKS = 16;
 	const int TOWER_HEIGHT = 10;
 	glm::vec3 tower_base_positions[] = {
 		glm::vec3(6.0f, GROUND_LEVEL + 1, 6.0f),
@@ -244,13 +238,76 @@ int main() {
 		glm::vec3(11.0f, GROUND_LEVEL + 1, 13.0f),
 	};
 
+	glm::vec3 tall_grass_coords[] = {
+		glm::vec3(4.0f, GROUND_LEVEL + 1, 10.0f),
+		glm::vec3(1.0f, GROUND_LEVEL + 1, 3.0f),
+		glm::vec3(2.0f, GROUND_LEVEL + 1, 7.0f),
+		glm::vec3(4.0f, GROUND_LEVEL + 1, 2.0f),
+		glm::vec3(5.0f, GROUND_LEVEL + 1, 9.0f),
+		glm::vec3(1.0f, GROUND_LEVEL + 1, 15.0f),
+		glm::vec3(3.0f, GROUND_LEVEL + 1, 17.0f),
+		glm::vec3(5.0f, GROUND_LEVEL + 1, 12.0f),
+		glm::vec3(7.0f, GROUND_LEVEL + 1, 16.0f),
+		glm::vec3(9.0f, GROUND_LEVEL + 1, 13.0f),
+		glm::vec3(10.0f, GROUND_LEVEL + 1, 18.0f),
+		glm::vec3(12.0f, GROUND_LEVEL + 1, 16.0f),
+		glm::vec3(14.0f, GROUND_LEVEL + 1, 19.0f),
+		glm::vec3(14.0f, GROUND_LEVEL + 1, 3.0f),
+		glm::vec3(16.0f, GROUND_LEVEL + 1, 6.0f),
+		glm::vec3(18.0f, GROUND_LEVEL + 1, 1.0f),
+		glm::vec3(19.0f, GROUND_LEVEL + 1, 4.0f),
+		glm::vec3(15.0f, GROUND_LEVEL + 1, 15.0f),
+		glm::vec3(18.0f, GROUND_LEVEL + 1, 8.0f),
+		glm::vec3(19.0f, GROUND_LEVEL + 1, 12.0f),
+		glm::vec3(17.0f, GROUND_LEVEL + 1, 18.0f)
+	};
+
+	glm::vec3 short_grass_coords[] = {
+		glm::vec3(1.0f, GROUND_LEVEL + 1, 1.0f),
+		glm::vec3(2.0f, GROUND_LEVEL + 1, 2.0f),
+		glm::vec3(2.0f, GROUND_LEVEL + 1, 4.0f),
+		glm::vec3(3.0f, GROUND_LEVEL + 1, 1.0f),
+		glm::vec3(4.0f, GROUND_LEVEL + 1, 3.0f),
+		glm::vec3(5.0f, GROUND_LEVEL + 1, 5.0f),
+		glm::vec3(1.0f, GROUND_LEVEL + 1, 6.0f),
+		glm::vec3(3.0f, GROUND_LEVEL + 1, 7.0f),
+		glm::vec3(1.0f, GROUND_LEVEL + 1, 12.0f),
+		glm::vec3(3.0f, GROUND_LEVEL + 1, 14.0f),
+		glm::vec3(2.0f, GROUND_LEVEL + 1, 15.0f),
+		glm::vec3(4.0f, GROUND_LEVEL + 1, 13.0f),
+		glm::vec3(4.0f, GROUND_LEVEL + 1, 18.0f),
+		glm::vec3(1.0f, GROUND_LEVEL + 1, 19.0f),
+		glm::vec3(5.0f, GROUND_LEVEL + 1, 17.0f),
+		glm::vec3(6.0f, GROUND_LEVEL + 1, 15.0f),
+		glm::vec3(7.0f, GROUND_LEVEL + 1, 13.0f),
+		glm::vec3(8.0f, GROUND_LEVEL + 1, 18.0f),
+		glm::vec3(10.0f, GROUND_LEVEL + 1, 15.0f),
+		glm::vec3(11.0f, GROUND_LEVEL + 1, 18.0f),
+		glm::vec3(12.0f, GROUND_LEVEL + 1, 14.0f),
+		glm::vec3(13.0f, GROUND_LEVEL + 1, 17.0f),
+		glm::vec3(14.0f, GROUND_LEVEL + 1, 2.0f),
+		glm::vec3(15.0f, GROUND_LEVEL + 1, 5.0f),
+		glm::vec3(16.0f, GROUND_LEVEL + 1, 1.0f),
+		glm::vec3(17.0f, GROUND_LEVEL + 1, 4.0f),
+		glm::vec3(18.0f, GROUND_LEVEL + 1, 2.0f),
+		glm::vec3(19.0f, GROUND_LEVEL + 1, 6.0f),
+		glm::vec3(15.0f, GROUND_LEVEL + 1, 10.0f),
+		glm::vec3(16.0f, GROUND_LEVEL + 1, 12.0f),
+		glm::vec3(17.0f, GROUND_LEVEL + 1, 9.0f),
+		glm::vec3(18.0f, GROUND_LEVEL + 1, 11.0f),
+		glm::vec3(17.0f, GROUND_LEVEL + 1, 15.0f),
+		glm::vec3(19.0f, GROUND_LEVEL + 1, 14.0f),
+		glm::vec3(18.0f, GROUND_LEVEL + 1, 18.0f),
+		glm::vec3(15.0f, GROUND_LEVEL + 1, 19.0f)
+	};
+
 	std::vector<WindowData> window_locations;
-	window_locations.push_back({glm::vec3(5.0f, GROUND_LEVEL + 2, 7.0f), 90.0f});
-	window_locations.push_back({glm::vec3(5.0f, GROUND_LEVEL + 3, 7.0f), 90.0f});
-	window_locations.push_back({glm::vec3(9.0f, GROUND_LEVEL + 2, 3.0f), 0.0f});
-	window_locations.push_back({glm::vec3(9.0f, GROUND_LEVEL + 3, 3.0f), 0.0f});
-	window_locations.push_back({glm::vec3(11.0f, GROUND_LEVEL + 2, 7.0f), 90.0f});
-	window_locations.push_back({glm::vec3(11.0f, GROUND_LEVEL + 3, 7.0f), 90.0f});
+	window_locations.push_back({glm::vec3(6.0f, GROUND_LEVEL + 2, 7.0f), 90.0f});
+	window_locations.push_back({glm::vec3(6.0f, GROUND_LEVEL + 3, 7.0f), 90.0f});
+	window_locations.push_back({glm::vec3(9.0f, GROUND_LEVEL + 2, 4.0f), 0.0f});
+	window_locations.push_back({glm::vec3(9.0f, GROUND_LEVEL + 3, 4.0f), 0.0f});
+	window_locations.push_back({glm::vec3(12.0f, GROUND_LEVEL + 2, 7.0f), 90.0f});
+	window_locations.push_back({glm::vec3(12.0f, GROUND_LEVEL + 3, 7.0f), 90.0f});
 
 	int start_height = 1;
 	int end_height = 3;
@@ -309,29 +366,12 @@ int main() {
 
 	glGenBuffers(1, &flatVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, flatVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(moon_vertices), moon_vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(flat_vertices), flat_vertices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, moon_stride * sizeof(float), (void *)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, flat_stride * sizeof(float), (void *)0);
 	glEnableVertexAttribArray(0);
 
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, moon_stride * sizeof(float), (void *)(2 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	glBindVertexArray(0);
-
-	unsigned int tall_grass_VAO, tall_grass_VBO;
-
-	glGenVertexArrays(1, &tall_grass_VAO);
-	glBindVertexArray(tall_grass_VAO);
-
-	glGenBuffers(1, &tall_grass_VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, tall_grass_VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(tall_grass_vertices), tall_grass_vertices, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, tall_grass_stride * sizeof(float), (void *)0);
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, tall_grass_stride * sizeof(float), (void *)(2 * sizeof(float)));
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, flat_stride * sizeof(float), (void *)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
 	glBindVertexArray(0);
@@ -355,6 +395,9 @@ int main() {
 	Texture2D black("assets/black.png");
 
 	Texture2D window_texture("assets/yellow_stained_glass.png");
+
+	Texture2D short_grass("assets/short_grass.png");
+	Texture2D tall_grass("assets/tall_grass.png");
 
 	glm::vec3 lantern_coords = glm::vec3(9.0f, GROUND_LEVEL + 1, 7.0f);
 	glm::vec3 lantern_color = glm::vec3(1.0f, 0.4f, 0.1f);
@@ -491,7 +534,7 @@ int main() {
 		cobblestone_specular.bind();
 
 		for (int j = 0; j < TOWER_HEIGHT; j++) {
-			for (int i = 0; i < TOWER_BASE_BLOCKS; i++) {
+			for (int i = 0; i < std::size(tower_base_positions); i++) {
 				glm::vec3 posn = tower_base_positions[i] + glm::vec3(0.0f, (float)j, 0.0f);
 
 				if (std::find(std::begin(tower_ignore_blocks), std::end(tower_ignore_blocks), posn) != std::end(tower_ignore_blocks))
@@ -534,13 +577,12 @@ int main() {
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		flat_shader.use();
+		flat_shader.set_int("tex", 0);
 
 		glBindVertexArray(flatVAO);
 
 		glActiveTexture(GL_TEXTURE0);
 		window_texture.bind();
-
-		flat_shader.set_int("tex", 0);
 
 		std::sort(window_locations.begin(), window_locations.end(), [](WindowData a, WindowData b) {
 			return glm::length(camera.position - a.position) > glm::length(camera.position - b.position);
@@ -553,6 +595,43 @@ int main() {
 			
 			flat_shader.set_matrix4("model", model);
 
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
+
+		tall_grass_shader.use();
+		tall_grass_shader.set_matrix4("projection", projection);
+		tall_grass_shader.set_matrix4("view", view);
+
+		glActiveTexture(GL_TEXTURE0);
+		tall_grass.bind();
+
+		for (int i = 0; i < std::size(tall_grass_coords); i++) {
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, tall_grass_coords[i] + glm::vec3(0.0f, 0.3f, 0.5f));
+			model = glm::scale(model, glm::vec3(1.0f, 2.0f, 1.0f));
+			model = glm::rotate(model, glm::radians(45.0f), glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
+
+			tall_grass_shader.set_matrix4("model", model);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+
+			model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
+			tall_grass_shader.set_matrix4("model", model);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
+
+		glActiveTexture(GL_TEXTURE0);
+		short_grass.bind();
+
+		for (int i = 0; i < std::size(short_grass_coords); i++) {
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, short_grass_coords[i] - glm::vec3(0.0f, 0.2f, 0.0f));
+			model = glm::rotate(model, glm::radians(45.0f), glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
+
+			tall_grass_shader.set_matrix4("model", model);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+
+			model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
+			tall_grass_shader.set_matrix4("model", model);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
 	}
