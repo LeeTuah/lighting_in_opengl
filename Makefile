@@ -1,6 +1,6 @@
 PROJECT_NAME = LearningLightingInOpenGL
 CXX = g++
-CXXFLAGS = -O3 -Wall -Wextra
+CXXFLAGS = -O3 -Wall -Wextra -std=c++23
 INCLUDES = -I./src
 LDFLAGS_STATIC = -static-libgcc -static-libstdc++
 

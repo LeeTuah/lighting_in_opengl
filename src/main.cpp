@@ -13,6 +13,8 @@
 # include <algorithm>
 # include <iterator>
 # include <random>
+# include <vector>
+# include <map>
 
 const int SCR_WIDTH = 1280;
 const int SCR_HEIGHT = 720;
@@ -33,6 +35,11 @@ bool flashlight = false;
 
 float last_flashlight_time = 0.0f;
 float flashlight_cooldown = 0.35f;
+
+struct WindowData {
+	glm::vec3 position;
+	float rotation;
+};
 
 int random_number(int begin, int end){
     std::random_device rd;
@@ -100,8 +107,8 @@ int main() {
 	Shader lamp_shader("shaders/lamplight.vert", "shaders/lamplight.frag");
 	lamp_shader.use();
 
-	Shader moon_shader("shaders/moon.vert", "shaders/moon.frag");
-	moon_shader.use();
+	Shader flat_shader("shaders/flat.vert", "shaders/flat.frag");
+	flat_shader.use();
 
 	Shader main_shader("shaders/lightingtest.vert", "shaders/lightingtest.frag");
 	main_shader.use();
@@ -157,13 +164,24 @@ int main() {
 
 	const unsigned int moon_stride = 4;
 	float moon_vertices[] = {
-		-1.0f,  1.0f,   0.0f, 1.0f, 
-		-1.0f, -1.0f,   0.0f, 0.0f,  
-		1.0f, -1.0f,   1.0f, 0.0f, 
+		-0.5f,  0.5f,   0.0f, 1.0f, 
+		-0.5f, -0.5f,   0.0f, 0.0f,  
+		0.5f, -0.5f,   1.0f, 0.0f, 
 
-		-1.0f,  1.0f,   0.0f, 1.0f,  
-		1.0f, -1.0f,   1.0f, 0.0f,
-		1.0f,  1.0f,   1.0f, 1.0f  
+		-0.5f,  0.5f,   0.0f, 1.0f,
+		0.5f, -0.5f,   1.0f, 0.0f,
+		0.5f,  0.5f,   1.0f, 1.0f  
+	};
+
+	const unsigned int tall_grass_stride = 4;
+	float tall_grass_vertices[] = {
+		-0.5f,  1.5f,   0.0f, 1.0f, 
+		-0.5f, -0.5f,   0.0f, 0.0f,  
+		0.5f, -0.5f,   1.0f, 0.0f, 
+
+		-0.5f,  1.5f,   0.0f, 1.0f,
+		0.5f, -0.5f,   1.0f, 0.0f,
+		0.5f,  1.5f,   1.0f, 1.0f  
 	};
 
 	const int TOWER_BASE_BLOCKS = 16;
@@ -226,6 +244,14 @@ int main() {
 		glm::vec3(11.0f, GROUND_LEVEL + 1, 13.0f),
 	};
 
+	std::vector<WindowData> window_locations;
+	window_locations.push_back({glm::vec3(5.0f, GROUND_LEVEL + 2, 7.0f), 90.0f});
+	window_locations.push_back({glm::vec3(5.0f, GROUND_LEVEL + 3, 7.0f), 90.0f});
+	window_locations.push_back({glm::vec3(9.0f, GROUND_LEVEL + 2, 3.0f), 0.0f});
+	window_locations.push_back({glm::vec3(9.0f, GROUND_LEVEL + 3, 3.0f), 0.0f});
+	window_locations.push_back({glm::vec3(11.0f, GROUND_LEVEL + 2, 7.0f), 90.0f});
+	window_locations.push_back({glm::vec3(11.0f, GROUND_LEVEL + 3, 7.0f), 90.0f});
+
 	int start_height = 1;
 	int end_height = 3;
 	int birch_heights[] = {
@@ -238,22 +264,18 @@ int main() {
 
 	const float stretch[] = {1.0f, 1.0f, 1.0f}; // x, y, z
     float triangle_vertices[] = {
-        // bottom face
         +stretch[0], 0, 0,
         -stretch[0], 0, 0,
         0, 0, stretch[2],
 
-        // top face -xz
         -stretch[0], 0, 0,
         0, 0, stretch[2],
         0, stretch[1], 0,
 
-        // top face -z
         +stretch[0], 0, 0,
         -stretch[0], 0, 0,
         0, stretch[1], 0,
 
-        // top face xz
         +stretch[0], 0, 0,
         0, 0, stretch[2],
         0, stretch[1], 0
@@ -280,19 +302,36 @@ int main() {
 
 	glBindVertexArray(0);
 
-	unsigned int moonVAO, moonVBO;
+	unsigned int flatVAO, flatVBO;
 
-	glGenVertexArrays(1, &moonVAO);
-	glBindVertexArray(moonVAO);
+	glGenVertexArrays(1, &flatVAO);
+	glBindVertexArray(flatVAO);
 
-	glGenBuffers(1, &moonVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, moonVBO);
+	glGenBuffers(1, &flatVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, flatVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(moon_vertices), moon_vertices, GL_STATIC_DRAW);
 
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, moon_stride * sizeof(float), (void *)0);
 	glEnableVertexAttribArray(0);
 
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, moon_stride * sizeof(float), (void *)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	glBindVertexArray(0);
+
+	unsigned int tall_grass_VAO, tall_grass_VBO;
+
+	glGenVertexArrays(1, &tall_grass_VAO);
+	glBindVertexArray(tall_grass_VAO);
+
+	glGenBuffers(1, &tall_grass_VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, tall_grass_VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(tall_grass_vertices), tall_grass_vertices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, tall_grass_stride * sizeof(float), (void *)0);
+	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, tall_grass_stride * sizeof(float), (void *)(2 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
 	glBindVertexArray(0);
@@ -315,8 +354,10 @@ int main() {
 	Texture2D moon_tex("assets/moon.png");
 	Texture2D black("assets/black.png");
 
-	glm::vec3 campfire_coords = glm::vec3(9.0f, GROUND_LEVEL + 1, 7.0f);
-	glm::vec3 campfire_color = glm::vec3(1.0f, 0.4f, 0.1f);
+	Texture2D window_texture("assets/yellow_stained_glass.png");
+
+	glm::vec3 lantern_coords = glm::vec3(9.0f, GROUND_LEVEL + 1, 7.0f);
+	glm::vec3 lantern_color = glm::vec3(1.0f, 0.4f, 0.1f);
 
 	while (not glfwWindowShouldClose(window)) {
 		glfwSwapBuffers(window);
@@ -330,6 +371,9 @@ int main() {
 
 		glEnable(GL_DEPTH_TEST);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		glm::mat4 view(1.0f);
 		view = camera.get_view_matrix();
@@ -339,22 +383,22 @@ int main() {
 
 		glm::mat4 model(1.0f);
 
-		moon_shader.use();
-		moon_shader.set_matrix4("view", view);
-		moon_shader.set_matrix4("projection", projection);
+		flat_shader.use();
+		flat_shader.set_matrix4("view", view);
+		flat_shader.set_matrix4("projection", projection);
 
-		glBindVertexArray(moonVAO);
+		glBindVertexArray(flatVAO);
 
 		glActiveTexture(GL_TEXTURE0);
 		moon_tex.bind();
 
-		moon_shader.set_int("tex", 0);
+		flat_shader.set_int("tex", 0);
 
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(9.0f, GROUND_LEVEL + 40, -51.0f));
 		model = glm::scale(model, glm::vec3(15.0f));
 		model = glm::rotate(model, glm::radians(15.0f), glm::normalize(glm::vec3(1.0f, 0.0f, 0.0f)));
-		moon_shader.set_matrix4("model", model);
+		flat_shader.set_matrix4("model", model);
 
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
@@ -401,17 +445,17 @@ int main() {
 
 		main_shader.set_float3("sun.color", glm::vec3(1.0f));
 
-		main_shader.set_float3("campfire.position", campfire_coords);
+		main_shader.set_float3("lantern.position", lantern_coords);
 
-		main_shader.set_float("campfire.constant", 1.0f);
-		main_shader.set_float("campfire.linear", 0.045f);
-		main_shader.set_float("campfire.quadratic", 0.0075f);
+		main_shader.set_float("lantern.constant", 1.0f);
+		main_shader.set_float("lantern.linear", 0.045f);
+		main_shader.set_float("lantern.quadratic", 0.0075f);
 
-		main_shader.set_float3("campfire.ambient", glm::vec3(0.1f));
-		main_shader.set_float3("campfire.diffuse", glm::vec3(0.9f));
-		main_shader.set_float3("campfire.specular", glm::vec3(1.0f));
+		main_shader.set_float3("lantern.ambient", glm::vec3(0.1f));
+		main_shader.set_float3("lantern.diffuse", glm::vec3(0.9f));
+		main_shader.set_float3("lantern.specular", glm::vec3(1.0f));
 
-		main_shader.set_float3("campfire.color", campfire_color);
+		main_shader.set_float3("lantern.color", lantern_color);
 
 		main_shader.set_float3("flashlight.position", camera.position);
 		main_shader.set_float3("flashlight.direction", camera.front);
@@ -488,8 +532,31 @@ int main() {
 		main_shader.set_matrix4("model", model);
 
 		glDrawArrays(GL_TRIANGLES, 0, 36);
-	}
 
+		flat_shader.use();
+
+		glBindVertexArray(flatVAO);
+
+		glActiveTexture(GL_TEXTURE0);
+		window_texture.bind();
+
+		flat_shader.set_int("tex", 0);
+
+		std::sort(window_locations.begin(), window_locations.end(), [](WindowData a, WindowData b) {
+			return glm::length(camera.position - a.position) > glm::length(camera.position - b.position);
+		});
+
+		for (auto window : window_locations) {
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, window.position);
+			model = glm::rotate(model, glm::radians(window.rotation), glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
+			
+			flat_shader.set_matrix4("model", model);
+
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
+	}
+	
 	glfwTerminate();
 	return 0;
 }
