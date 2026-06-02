@@ -87,6 +87,20 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 	glViewport(0, 0, width, height);
 }
 
+void send_model_matrix(
+	Shader shader, glm::vec3 translate, glm::vec3 scale = glm::vec3(1.0f), 
+	float rotation_angle = 0.0f, glm::vec3 rotation_axis = glm::vec3(0.0f)) {
+	glm::mat4 model(1.0f);
+
+	model = glm::translate(model, translate);
+	if (scale != glm::vec3(1.0f))
+		model = glm::scale(model, scale);
+	if (rotation_angle != 0.0f)
+		model = glm::rotate(model, glm::radians(rotation_angle), glm::normalize(rotation_axis));
+
+	shader.set_matrix4("model", model);
+}
+
 int main() {
 	camera.allow_flight = false;
 
@@ -114,6 +128,9 @@ int main() {
 
 	Shader tall_grass_shader("shaders/flat.vert", "shaders/tallgrass.frag");
 	tall_grass_shader.use();
+
+	Shader torch_shader("shaders/flat.vert", "shaders/torch.frag");
+	torch_shader.use();
 
 	Shader main_shader("shaders/lightingtest.vert", "shaders/lightingtest.frag");
 	main_shader.use();
@@ -399,7 +416,11 @@ int main() {
 	Texture2D short_grass("assets/short_grass.png");
 	Texture2D tall_grass("assets/tall_grass.png");
 
-	glm::vec3 lantern_coords = glm::vec3(9.0f, GROUND_LEVEL + 1, 7.0f);
+	Texture2D redstone_torch("assets/redstone_torch.png");
+
+	Texture2D gold_block("assets/gold_block.png");
+
+	glm::vec3 lantern_coords = glm::vec3(9.0f, GROUND_LEVEL + 2, 7.0f);
 	glm::vec3 lantern_color = glm::vec3(1.0f, 0.4f, 0.1f);
 
 	while (not glfwWindowShouldClose(window)) {
@@ -437,33 +458,12 @@ int main() {
 
 		flat_shader.set_int("tex", 0);
 
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(9.0f, GROUND_LEVEL + 40, -51.0f));
-		model = glm::scale(model, glm::vec3(15.0f));
-		model = glm::rotate(model, glm::radians(15.0f), glm::normalize(glm::vec3(1.0f, 0.0f, 0.0f)));
-		flat_shader.set_matrix4("model", model);
-
+		send_model_matrix(flat_shader, glm::vec3(9.0f, GROUND_LEVEL + 40, -51.0f), glm::vec3(15.0f), 15.0f, glm::vec3(1.0f, 0.0f, 0.0f));
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		lamp_shader.use();
-		lamp_shader.set_matrix4("view", view);
-		lamp_shader.set_matrix4("projection", projection);
-
+		main_shader.use();
 		glBindVertexArray(VAO);
 
-		glActiveTexture(GL_TEXTURE0);
-		sea_lantern_diffuse.bind();
-
-		lamp_shader.set_float("lamp_texture", 0);
-		lamp_shader.set_float3("lamp_color", glm::vec3(0.7f, 0.7f, 0.5f));
-
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(9.0f, GROUND_LEVEL + 1, 7.0f));
-		main_shader.set_matrix4("model", model);
-
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		main_shader.use();
 		main_shader.set_matrix4("view", view);
 		main_shader.set_matrix4("projection", projection);
 
@@ -519,10 +519,7 @@ int main() {
 		int FIELD_SIZE = 20;
 		for (int i = 0; i < FIELD_SIZE; i++) {
 			for (int j = 0; j < FIELD_SIZE; j++) {
-				model = glm::mat4(1.0f);
-				model = glm::translate(model, glm::vec3((float)i, GROUND_LEVEL, (float)j));
-				main_shader.set_matrix4("model", model);
-
+				send_model_matrix(main_shader, glm::vec3((float)i, GROUND_LEVEL, (float)j));
 				glDrawArrays(GL_TRIANGLES, 0, 36);
 			}
 		}
@@ -540,13 +537,16 @@ int main() {
 				if (std::find(std::begin(tower_ignore_blocks), std::end(tower_ignore_blocks), posn) != std::end(tower_ignore_blocks))
 					continue;
 
-				model = glm::mat4(1.0f);
-				model = glm::translate(model, posn);
-				main_shader.set_matrix4("model", model);
-
+				send_model_matrix(main_shader, posn);
 				glDrawArrays(GL_TRIANGLES, 0, 36);
 			}
 		}
+
+		glActiveTexture(GL_TEXTURE0);
+		gold_block.bind();
+
+		send_model_matrix(main_shader, glm::vec3(9.0f, GROUND_LEVEL + 1, 7.0f));
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		glActiveTexture(GL_TEXTURE0);
 		birch_log.bind();
@@ -556,24 +556,14 @@ int main() {
 
 		for (int i = 0; i < std::size(birch_tree_coords); i++) {
 			for (int j = 0; j < TREE_HEIGHT + birch_heights[i]; j++) {
-				model = glm::mat4(1.0f);
-				model = glm::translate(model, birch_tree_coords[i] + glm::vec3(0.0f, (float)j, 0.0f));
-				main_shader.set_matrix4("model", model);
-
+				send_model_matrix(main_shader, birch_tree_coords[i] + glm::vec3(0.0f, (float)j, 0.0f));
 				glDrawArrays(GL_TRIANGLES, 0, 36);
 			}
 		}
 
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(10.0f, GROUND_LEVEL + 3, 13.0f));
-		main_shader.set_matrix4("model", model);
-
+		send_model_matrix(main_shader, glm::vec3(10.0f, GROUND_LEVEL + 3, 13.0f));
 		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(12.0f, GROUND_LEVEL + 3, 13.0f));
-		main_shader.set_matrix4("model", model);
-
+		send_model_matrix(main_shader, glm::vec3(12.0f, GROUND_LEVEL + 3, 13.0f));
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		flat_shader.use();
@@ -589,12 +579,7 @@ int main() {
 		});
 
 		for (auto window : window_locations) {
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, window.position);
-			model = glm::rotate(model, glm::radians(window.rotation), glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
-			
-			flat_shader.set_matrix4("model", model);
-
+			send_model_matrix(flat_shader, window.position, glm::vec3(1.0f), window.rotation, glm::vec3(0.0f, 1.0f, 0.0f));
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
 
@@ -606,16 +591,10 @@ int main() {
 		tall_grass.bind();
 
 		for (int i = 0; i < std::size(tall_grass_coords); i++) {
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, tall_grass_coords[i] + glm::vec3(0.0f, 0.3f, 0.5f));
-			model = glm::scale(model, glm::vec3(1.0f, 2.0f, 1.0f));
-			model = glm::rotate(model, glm::radians(45.0f), glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
-
-			tall_grass_shader.set_matrix4("model", model);
+			send_model_matrix(tall_grass_shader, tall_grass_coords[i] + glm::vec3(0.0f, 0.3f, 0.5f), glm::vec3(1.0f, 2.0f, 1.0f), 45.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 
-			model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
-			tall_grass_shader.set_matrix4("model", model);
+			send_model_matrix(tall_grass_shader, tall_grass_coords[i] + glm::vec3(0.0f, 0.3f, 0.5f), glm::vec3(1.0f, 2.0f, 1.0f), -45.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
 
@@ -623,17 +602,27 @@ int main() {
 		short_grass.bind();
 
 		for (int i = 0; i < std::size(short_grass_coords); i++) {
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, short_grass_coords[i] - glm::vec3(0.0f, 0.2f, 0.0f));
-			model = glm::rotate(model, glm::radians(45.0f), glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
-
-			tall_grass_shader.set_matrix4("model", model);
+			send_model_matrix(tall_grass_shader, short_grass_coords[i] - glm::vec3(0.0f, 0.2f, 0.0f), glm::vec3(1.0f), 45.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 
-			model = glm::rotate(model, glm::radians(-90.0f), glm::normalize(glm::vec3(0.0f, 1.0f, 0.0f)));
-			tall_grass_shader.set_matrix4("model", model);
+			send_model_matrix(tall_grass_shader, short_grass_coords[i] - glm::vec3(0.0f, 0.2f, 0.0f), glm::vec3(1.0f), -45.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
+
+		torch_shader.use();
+		torch_shader.set_matrix4("projection", projection);
+		torch_shader.set_matrix4("view", view);
+
+		torch_shader.set_int("tex", 0);
+
+		glActiveTexture(GL_TEXTURE0);
+		redstone_torch.bind();
+
+		send_model_matrix(tall_grass_shader, glm::vec3(9.0f, GROUND_LEVEL + 2, 7.0f) - glm::vec3(0.0f, 0.25f, 0.0f), glm::vec3(0.4, 0.5f, 0.4f));
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		
+		send_model_matrix(tall_grass_shader, glm::vec3(9.0f, GROUND_LEVEL + 2, 7.0f) - glm::vec3(0.0f, 0.25f, 0.0f), glm::vec3(0.4, 0.5f, 0.4f), 90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 	}
 	
 	glfwTerminate();
