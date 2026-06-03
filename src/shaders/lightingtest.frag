@@ -117,8 +117,11 @@ vec3 calc_spotlight(Spotlight light, Material material, vec2 tex_coord, vec3 nor
 	return (ambient_light + diffuse_light + specular_light);
 }
 
+# define max_point_lights 20
+uniform int allocated_point_lights;
+
 uniform DirectionalLight sun;
-uniform PointLight lantern;
+uniform PointLight point_lights[max_point_lights];
 uniform Spotlight flashlight;
 
 void main() {
@@ -127,7 +130,10 @@ void main() {
 	vec3 result = vec3(0.0f, 0.0f, 0.0f);
 
 	result += calc_directional_light(sun, m1, tex_coords, norm, viewer_dirn);
-	result += calc_point_light(lantern, m1, tex_coords, norm, frag_pos, viewer_dirn);
+
+	for (int i = 0; i < allocated_point_lights; i++)
+		result += calc_point_light(point_lights[i], m1, tex_coords, norm, frag_pos, viewer_dirn);
+
 	result += calc_spotlight(flashlight, m1, tex_coords, norm, frag_pos, viewer_dirn);
 	
 	FragColor = vec4(result, 1.0f);
