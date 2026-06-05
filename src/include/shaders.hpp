@@ -58,7 +58,7 @@ Shader::Shader(const char* vertex_shader_path, const char* fragment_shader_path)
 
 		vertex_shader_str = v_stream.str();
 		fragment_shader_str = f_stream.str();
-	} catch (std::ifstream::failure e) {
+	} catch (std::ifstream::failure &e) {
 		print("[!] Could not read the shader files!");
 	}
 

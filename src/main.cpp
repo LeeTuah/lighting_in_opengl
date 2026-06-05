@@ -5,6 +5,9 @@
 # include <glm/gtc/matrix_transform.hpp>
 # include <glm/gtc/type_ptr.hpp>
 
+# include <ft2build.h>
+# include FT_FREETYPE_H
+
 # include "include/camera.hpp"
 # include "include/shaders.hpp"
 # include "include/texture.hpp"
@@ -14,6 +17,7 @@
 # include <iterator>
 # include <random>
 # include <vector>
+# include <map>
 
 const int SCR_WIDTH = 1280;
 const int SCR_HEIGHT = 720;
@@ -191,6 +195,9 @@ int main() {
 
 	Shader grass_block_shader("shaders/grass_blocks.vert", "shaders/lightingtest.frag");
 	grass_block_shader.use();
+
+	Shader text_shader("shaders/text.vert", "shaders/text.frag");
+	text_shader.use();
 
 	Shader main_shader("shaders/lightingtest.vert", "shaders/lightingtest.frag");
 	main_shader.use();
@@ -474,6 +481,21 @@ int main() {
 
 	glBindVertexArray(0);
 
+	unsigned int text_VAO, text_VBO;
+
+	glGenVertexArrays(1, &text_VAO);
+	glBindVertexArray(text_VAO);
+
+	glGenBuffers(1, &text_VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, text_VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
+	glEnableVertexAttribArray(0);
+
+	glBindVertexArray(0);
+	
+
 	glClearColor(0.05f, 0.08f, 0.14f, 1.0f);
 
 	glm::vec3 object_color(0.1f, 0.3f, 0.6f);
@@ -501,6 +523,8 @@ int main() {
 
 	Texture2D gold_block("assets/gold_block.png");
 
+	character_class arial_font("assets/arial.ttf", 48);
+
 	while (not glfwWindowShouldClose(window)) {
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -522,6 +546,9 @@ int main() {
 
 		glm::mat4 projection(1.0f);
 		projection = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+
+		glm::mat4 text_projection;
+		text_projection = glm::ortho(0.0f, (float)SCR_WIDTH, 0.0f, (float)SCR_HEIGHT);
 
 		glm::mat4 model(1.0f);
 
@@ -680,6 +707,10 @@ int main() {
 			send_model_matrix(torch_shader, torch_coords[i] - glm::vec3(0.0f, 0.25f, 0.0f), glm::vec3(0.4, 0.5f, 0.4f), 90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
+
+		arial_font.render_text(text_shader, "Press F :3", text_VAO, text_VBO, 20.0f, 20.0f, 0.4f, glm::vec3(1.0f), text_projection);
+		arial_font.render_text(text_shader, "hi lol", text_VAO, text_VBO, SCR_WIDTH - 27.0f, SCR_HEIGHT - 15.0f, 0.2f, glm::vec3(0.0f, 0.5f, 1.0f), text_projection);
+		arial_font.render_text(text_shader, ".", text_VAO, text_VBO, SCR_WIDTH / 2.0f, SCR_HEIGHT / 2.0f, 0.44f, glm::vec3(1.0f), text_projection);
 	}
 	
 	glfwTerminate();
