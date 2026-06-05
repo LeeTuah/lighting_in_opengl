@@ -1,37 +1,38 @@
-PROJECT_NAME = LearningLightingInOpenGL
-CXX = g++
-CXXFLAGS = -O3 -Wall -Wextra -std=c++23
-INCLUDES = -I./src
-LDFLAGS_STATIC = -static-libgcc -static-libstdc++
-
-SOURCES = src/main.cpp src/glad.c 
-
-WIN_TARGET = src/$(PROJECT_NAME).exe
-WIN_LIBS = -lglfw3 -lgdi32 -lopengl32
-WIN_LDFLAGS = -static $(LDFLAGS_STATIC)
-
-LINUX_TARGET = src/$(PROJECT_NAME)
-LINUX_LIBS = -lglfw -lGL -lX11 -lpthread -lrt -lm -ldl
-LINUX_LDFLAGS = $(LDFLAGS_STATIC)
-
 ifeq ($(OS),Windows_NT)
-    DEFAULT_TARGET = windows
+    TARGET = src/minecraft_scene.exe
+    CXX = g++
+    CC = gcc
+    CXXFLAGS = -std=c++23 -O2 -I./include -I./include/freetype2
+    CFLAGS = -O2 -I./include
+    LDFLAGS = -static-libgcc -static-libstdc++ -Wl,-Bstatic -lglfw3 -lfreetype -Wl,-Bdynamic -lopengl32 -lgdi32 -luser32 -lshell32
+    CLEAN = del /Q src\*.o $(subst /,\,$(TARGET)) 2>NUL
 else
-    DEFAULT_TARGET = linux
+    TARGET = src/minecraft_scene
+    CXX = g++
+    CC = gcc
+    CXXFLAGS = -std=c++23 -O2 -I./include -I/usr/include/freetype2
+    CFLAGS = -O2 -I./include
+    LDFLAGS = -lglfw -lfreetype -lGL -lX11 -lpthread -lXrandr -lXi -ldl
+    CLEAN = rm -f src/*.o $(TARGET)
 endif
 
-all: $(DEFAULT_TARGET)
+CXX_SRCS = src/main.cpp
+C_SRCS = src/glad.c
 
-windows:
-	@echo "Building for Windows..."
-	$(CXX) $(CXXFLAGS) $(SOURCES) -o $(WIN_TARGET) $(INCLUDES) $(WIN_LIBS) $(WIN_LDFLAGS)
-	@echo "Successfully built $(WIN_TARGET)"
+CXX_OBJS = $(CXX_SRCS:.cpp=.o)
+C_OBJS = $(C_SRCS:.c=.o)
+OBJS = $(CXX_OBJS) $(C_OBJS)
 
-linux:
-	@echo "Building for Linux..."
-	$(CXX) $(CXXFLAGS) $(SOURCES) -o $(LINUX_TARGET) $(INCLUDES) $(LINUX_LIBS) $(LINUX_LDFLAGS)
-	@echo "Successfully built $(LINUX_TARGET)"
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CXX) $(OBJS) -o $(TARGET) $(LDFLAGS)
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	@echo "Cleaning up..."
-	rm -f $(WIN_TARGET) $(LINUX_TARGET)
+	$(CLEAN)
