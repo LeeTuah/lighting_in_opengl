@@ -1,2 +1,6 @@
 src/LearningLightingInOpenGL
 .vscode/
+src/glad.o
+src/main.o
+src/minecraft_scene
+src/minecraft_scene.exe
