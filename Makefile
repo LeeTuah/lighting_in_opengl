@@ -2,17 +2,17 @@ ifeq ($(OS),Windows_NT)
     TARGET = src/minecraft_scene.exe
     CXX = g++
     CC = gcc
-    CXXFLAGS = -std=c++23 -O2 -I./include -I./include/freetype2
+    CXXFLAGS = -std=c++23 -O2 -I./include $(shell pkg-config --cflags freetype2)
     CFLAGS = -O2 -I./include
-    LDFLAGS = -static-libgcc -static-libstdc++ -Wl,-Bstatic -lglfw3 -lfreetype -Wl,-Bdynamic -lopengl32 -lgdi32 -luser32 -lshell32
+    LDFLAGS = -static-libgcc -static-libstdc++ -Wl,-Bstatic -lglfw3 $(shell pkg-config --libs --static freetype2) -Wl,-Bdynamic -lopengl32 -lgdi32 -luser32 -lshell32
     CLEAN = del /Q src\*.o $(subst /,\,$(TARGET)) 2>NUL
 else
     TARGET = src/minecraft_scene
     CXX = g++
     CC = gcc
-    CXXFLAGS = -std=c++23 -O2 -I./include -I/usr/include/freetype2
+    CXXFLAGS = -std=c++23 -O2 -I./include $(shell pkg-config --cflags freetype2)
     CFLAGS = -O2 -I./include
-    LDFLAGS = -lglfw -lfreetype -lGL -lX11 -lpthread -lXrandr -lXi -ldl
+    LDFLAGS = -lglfw $(shell pkg-config --libs freetype2) -lGL -lX11 -lpthread -lXrandr -lXi -ldl
     CLEAN = rm -f src/*.o $(TARGET)
 endif
 
