@@ -8,7 +8,7 @@ I managed to render an eerie minecraft alpha-style scene, with a broken tower, n
 
 ## Demo Video
 
-[![CLI Sweeper Demo Video](https://img.youtube.com/vi/a9uOaJTj4tk/maxresdefault.jpg)](https://www.youtube.com/watch?v=a9uOaJTj4tk)
+[![Lighting Demo Video](https://img.youtube.com/vi/a9uOaJTj4tk/maxresdefault.jpg)](https://www.youtube.com/watch?v=a9uOaJTj4tk)
 
 (press on the thumbnail)
 
