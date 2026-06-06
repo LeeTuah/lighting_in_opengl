@@ -8,7 +8,7 @@ I managed to render an eerie minecraft alpha-style scene, with a broken tower, n
 
 ## Demo Video
 
-[![CLI Sweeper Demo Video](https://img.youtube.com/vi/gmZmyQ0Wg2s/maxresdefault.jpg)](https://www.youtube.com/watch?v=gmZmyQ0Wg2s)
+[![CLI Sweeper Demo Video](https://img.youtube.com/vi/a9uOaJTj4tk/maxresdefault.jpg)](https://www.youtube.com/watch?v=a9uOaJTj4tk)
 
 (press on the thumbnail)
 
@@ -24,7 +24,7 @@ I managed to render an eerie minecraft alpha-style scene, with a broken tower, n
 
 1. Language: C++
 2. Graphics API: OpenGL (Version 3.3 Core)
-3. Libraries: GLFW, GLAD, GLM and stb_image.h
+3. Libraries: GLFW, GLAD, GLM, stb_image.h and freetype2
 
 ## Controls
 
