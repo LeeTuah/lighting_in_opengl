@@ -32,3 +32,59 @@ I managed to render an eerie minecraft alpha-style scene, with a broken tower, n
 2. `Mouse` to look around
 3. `F` for flashlight
 4. `ESC` to close the render
+
+## Pre-built setup
+
+I have provided the setup files for both windows and linux in the releases section, so you can download the zip files for your system and run the specific executable. (MAKE SURE THAT THE SHADERS AND ASSETS FOLDER ARE IN THE SAME LOCATION AS THE EXECUTABLE)
+
+## Local Setup (Compile) and Installation
+
+To run this project locally, you will need a C++ compiler (`g++`/`gcc`) that supports C++23, `make`, and `pkg-config`. You also need to install the required dependencies: GLFW, FreeType2, and GLM. 
+
+### Prerequisites
+
+#### Windows (using MSYS2)
+If you are on Windows, it is highly recommended to use [MSYS2](https://www.msys2.org/) (specifically the UCRT64 environment) to install the dependencies and compile the code. Open your MSYS2 UCRT64 terminal and run:
+
+```bash
+pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-make mingw-w64-ucrt-x86_64-pkgconf mingw-w64-ucrt-x86_64-glfw mingw-w64-ucrt-x86_64-freetype mingw-w64-ucrt-x86_64-glm
+```
+
+#### Ubuntu/Debian
+```bash
+sudo apt update
+sudo apt install build-essential pkg-config libglfw3-dev libfreetype6-dev libglm-dev
+```
+
+#### Arch
+```bash
+sudo pacman -S base-devel pkgconf glfw-wayland freetype2 glm
+# Use glfw-x11 instead of glfw-wayland if you are on an X11 session
+```
+
+### Building the Project
+Once you have cloned the repository and installed the prerequisites, navigate to the root directory of the project in your terminal and build it using:
+
+```bash
+make
+```
+
+### Running the Program
+After a successful build, you can run the generated executable.
+
+#### Windows
+```bash
+.\src\minecraft_scene.exe
+```
+
+#### Linux
+```bash
+./src/minecraft_scene
+```
+
+### Cleaning up build files
+If you want to re-compile the program or delete the executables, run
+```bash
+make clean
+```
+
