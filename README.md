@@ -33,7 +33,9 @@ I managed to render an eerie minecraft alpha-style scene, with a broken tower, n
 3. `F` for flashlight
 4. `ESC` to close the render
 
-## Pre-built setup
+# How to run
+
+## Pre-built Executables
 
 I have provided the setup files for both windows and linux in the releases section, so you can download the zip files for your system and run the specific executable. (MAKE SURE THAT THE SHADERS AND ASSETS FOLDER ARE IN THE SAME LOCATION AS THE EXECUTABLE)
 
