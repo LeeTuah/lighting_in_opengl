@@ -41,12 +41,16 @@ I have provided the setup files for both windows and linux in the releases secti
 
 ## Local Setup (Compile) and Installation
 
+**IF THE PRE-BUILD EXECUTABLES FROM THE RELEASES SECTION DO NOT WORK FOR YOU (I.E. BUGGING OUT/CRASHING/NOT WORKING/ETC...), ONLY THEN TRY TO COMPILE IT LOCALLY, ELSE JUST RUN THE PRE-BUILT FILES**
 To run this project locally, you will need a C++ compiler (`g++`/`gcc`) that supports C++23, `make`, and `pkg-config`. You also need to install the required dependencies: GLFW, FreeType2, and GLM. 
 
 ### Prerequisites
 
 #### Windows (using MSYS2)
-If you are on Windows, it is highly recommended to use [MSYS2](https://www.msys2.org/) (specifically the UCRT64 environment) to install the dependencies and compile the code. Open your MSYS2 UCRT64 terminal and run:
+If you are on Windows, it is highly recommended to use [MSYS2](https://www.msys2.org/) (specifically the UCRT64 environment) to install the dependencies and compile the code. 
+Go to the MSYS2 website and install the MSYS2 compiler for your pc. There should be a [tutorial](https://www.msys2.org/) on how to install the compiler.
+
+Open your MSYS2 UCRT64 terminal and run:
 
 ```bash
 pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-make mingw-w64-ucrt-x86_64-pkgconf mingw-w64-ucrt-x86_64-glfw mingw-w64-ucrt-x86_64-freetype mingw-w64-ucrt-x86_64-glm
@@ -66,6 +70,7 @@ sudo pacman -S base-devel pkgconf glfw-wayland freetype2 glm
 
 ### Building the Project
 Once you have cloned the repository and installed the prerequisites, navigate to the root directory of the project in your terminal and build it using:
+(Note: If you are on Windows then use the MSYS2 UCRT64 compiler as it better for it)
 
 ```bash
 make
